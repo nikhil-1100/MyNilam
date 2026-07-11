@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
               <div className="p-2 bg-indigo-600 rounded-xl">
                 <Home className="h-5 w-5" />
               </div>
-              <span className="text-lg font-bold">Rentel</span>
+              <span className="text-lg font-bold">MyNilam</span>
             </Link>
             <p className="text-sm max-w-sm leading-relaxed">
               Find, rent, or buy your next property with ease. A modern real-estate marketplace offering apartments, flats, villas, plots, and roommate listings.
@@ -72,7 +72,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-900 mt-16 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} Rentel Inc. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} MyNilam. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             <Link href="/" className="hover:text-gray-400">Facebook</Link>
             <Link href="/" className="hover:text-gray-400">Twitter</Link>

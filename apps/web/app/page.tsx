@@ -91,7 +91,7 @@ export default function HomePage() {
                 Find Your Next Room
               </h1>
               <p className="text-slate-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed font-semibold">
-                Rentel connects you to verified premium flats, luxury houses, commercial hubs, and shared roommate spaces with zero hassle.
+                MyNilam connects you to verified premium flats, luxury houses, commercial hubs, and shared roommate spaces with zero hassle.
               </p>
             </div>
             

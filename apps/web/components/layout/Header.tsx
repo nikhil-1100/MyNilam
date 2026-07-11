@@ -11,6 +11,19 @@ export const Header: React.FC = () => {
   const { user, logout } = useAuth()
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
+  const [logoText, setLogoText] = useState<'Nilam' | 'നിലം'>('Nilam')
+  const [isFlipped, setIsFlipped] = useState(false)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIsFlipped(true)
+      setTimeout(() => {
+        setLogoText((prev) => (prev === 'Nilam' ? 'നിലം' : 'Nilam'))
+        setIsFlipped(false)
+      }, 300)
+    }, 30000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -47,7 +60,14 @@ export const Header: React.FC = () => {
             <Home className="h-5 w-5" />
           </div>
           <span className="text-xl font-black bg-gradient-to-r from-slate-950 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent tracking-tight whitespace-nowrap py-1 inline-block">
-            Rentel
+            My
+            <span 
+              className={`inline-block transition-all duration-300 transform ml-0.5 ${
+                isFlipped ? 'opacity-0 scale-75 -translate-y-1' : 'opacity-100 scale-100 translate-y-0'
+              }`}
+            >
+              {logoText}
+            </span>
           </span>
         </Link>
 
