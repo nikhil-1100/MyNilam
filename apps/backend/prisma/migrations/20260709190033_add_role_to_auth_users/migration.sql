@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "auth_users" ADD COLUMN     "Role" VARCHAR(50) NOT NULL DEFAULT 'NORMAL';

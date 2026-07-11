@@ -1,0 +1,1646 @@
+// =============================================================================
+// Rentel — Redesigned Prisma Schema
+// 21-Module Enterprise Normalized Database Architecture
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// SCHEMA 1: [Geo] - Geographic Hierarchy Module
+// =============================================================================
+
+model GeoCountry {
+  id            Int         @id @default(autoincrement()) @map("CountryID")
+  name          String      @unique @map("CountryName") @db.VarChar(100)
+  code          String      @unique @map("CountryCode") @db.Char(2)
+  currency_code String?     @map("CurrencyCode") @db.Char(3)
+  phone_code    String?     @map("PhoneCode") @db.VarChar(10)
+  row_guid      String      @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_active     Boolean     @default(true) @map("IsActive")
+  is_deleted    Boolean     @default(false) @map("IsDeleted")
+  created_date  DateTime    @default(now()) @map("CreatedDate")
+  created_by    BigInt?     @map("CreatedBy")
+  modified_date DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?     @map("ModifiedBy")
+
+  states        GeoState[]
+
+  @@index([is_deleted])
+  @@map("geo_countries")
+}
+
+model GeoState {
+  id            Int         @id @default(autoincrement()) @map("StateID")
+  country_id    Int         @map("CountryID")
+  name          String      @map("StateName") @db.VarChar(100)
+  code          String?     @map("StateCode") @db.VarChar(10)
+  row_guid      String      @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_active     Boolean     @default(true) @map("IsActive")
+  is_deleted    Boolean     @default(false) @map("IsDeleted")
+  created_date  DateTime    @default(now()) @map("CreatedDate")
+  created_by    BigInt?     @map("CreatedBy")
+  modified_date DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?     @map("ModifiedBy")
+
+  country       GeoCountry  @relation(fields: [country_id], references: [id], onDelete: Cascade)
+  districts     GeoDistrict[]
+
+  @@unique([country_id, name])
+  @@index([country_id])
+  @@index([is_deleted])
+  @@map("geo_states")
+}
+
+model GeoDistrict {
+  id            Int         @id @default(autoincrement()) @map("DistrictID")
+  state_id      Int         @map("StateID")
+  name          String      @map("DistrictName") @db.VarChar(100)
+  row_guid      String      @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_active     Boolean     @default(true) @map("IsActive")
+  is_deleted    Boolean     @default(false) @map("IsDeleted")
+  created_date  DateTime    @default(now()) @map("CreatedDate")
+  created_by    BigInt?     @map("CreatedBy")
+  modified_date DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?     @map("ModifiedBy")
+
+  state         GeoState    @relation(fields: [state_id], references: [id], onDelete: Cascade)
+  cities        GeoCity[]
+
+  @@unique([state_id, name])
+  @@index([is_deleted])
+  @@map("geo_districts")
+}
+
+model GeoCity {
+  id            Int         @id @default(autoincrement()) @map("CityID")
+  district_id   Int         @map("DistrictID")
+  name          String      @map("CityName") @db.VarChar(150)
+  latitude      Decimal?    @map("Latitude") @db.Decimal(10, 8)
+  longitude     Decimal?    @map("Longitude") @db.Decimal(11, 8)
+  row_guid      String      @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_active     Boolean     @default(true) @map("IsActive")
+  is_deleted    Boolean     @default(false) @map("IsDeleted")
+  created_date  DateTime    @default(now()) @map("CreatedDate")
+  created_by    BigInt?     @map("CreatedBy")
+  modified_date DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?     @map("ModifiedBy")
+
+  district      GeoDistrict @relation(fields: [district_id], references: [id], onDelete: Cascade)
+  areas         GeoArea[]
+
+  @@unique([district_id, name])
+  @@index([latitude, longitude])
+  @@index([is_deleted])
+  @@map("geo_cities")
+}
+
+model GeoArea {
+  id            Int         @id @default(autoincrement()) @map("AreaID")
+  city_id       Int         @map("CityID")
+  name          String      @map("AreaName") @db.VarChar(150)
+  zip_code      String?     @map("ZipCode") @db.VarChar(20)
+  row_guid      String      @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_active     Boolean     @default(true) @map("IsActive")
+  is_deleted    Boolean     @default(false) @map("IsDeleted")
+  created_date  DateTime    @default(now()) @map("CreatedDate")
+  created_by    BigInt?     @map("CreatedBy")
+  modified_date DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?     @map("ModifiedBy")
+
+  city          GeoCity     @relation(fields: [city_id], references: [id], onDelete: Cascade)
+  localities    GeoLocality[]
+
+  @@index([is_deleted])
+  @@map("geo_areas")
+}
+
+model GeoLocality {
+  id            Int         @id @default(autoincrement()) @map("LocalityID")
+  area_id       Int         @map("AreaID")
+  name          String      @map("LocalityName") @db.VarChar(200)
+  row_guid      String      @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_active     Boolean     @default(true) @map("IsActive")
+  is_deleted    Boolean     @default(false) @map("IsDeleted")
+  created_date  DateTime    @default(now()) @map("CreatedDate")
+  created_by    BigInt?     @map("CreatedBy")
+  modified_date DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?     @map("ModifiedBy")
+
+  area          GeoArea     @relation(fields: [area_id], references: [id], onDelete: Cascade)
+  listings      ListListing[]
+
+  @@index([is_deleted])
+  @@map("geo_localities")
+}
+
+// =============================================================================
+// SCHEMA 2: [Auth] - Authentication & Identity Module
+// =============================================================================
+
+model AuthUser {
+  id                  BigInt        @id @default(autoincrement()) @map("UserID")
+  row_guid            String        @unique @default(uuid()) @map("UserGUID") @db.Uuid
+  email               String        @unique @map("Email") @db.VarChar(256)
+  password_hash       String        @map("PasswordHash") @db.VarChar(500)
+  security_stamp      String        @default(uuid()) @map("SecurityStamp") @db.VarChar(500)
+  two_factor_enabled  Boolean       @default(false) @map("TwoFactorEnabled")
+  lockout_end_date    DateTime?     @map("LockoutEndDate")
+  lockout_enabled     Boolean       @default(true) @map("LockoutEnabled")
+  access_failed_count Int           @default(0) @map("AccessFailedCount")
+  role                String        @default("NORMAL") @map("Role") @db.VarChar(50)
+  is_active           Boolean       @default(true) @map("IsActive")
+  is_deleted          Boolean       @default(false) @map("IsDeleted")
+  created_date        DateTime      @default(now()) @map("CreatedDate")
+  created_by          BigInt?       @map("CreatedBy")
+  modified_date       DateTime?     @updatedAt @map("ModifiedDate")
+  modified_by         BigInt?       @map("ModifiedBy")
+  deleted_date        DateTime?     @map("DeletedDate")
+  deleted_by          BigInt?       @map("DeletedBy")
+
+  profile              AuthUserProfile?
+  password_history     AuthUserPasswordHistory[]
+  refresh_tokens       AuthRefreshToken[]
+  devices              AuthUserDevice[]
+  login_history        AuthLoginHistory[]
+  otps                 AuthUserOTP[]
+  locks                AuthAccountLock[]         @relation("UserLocks")
+  unlocked_locks       AuthAccountLock[]         @relation("UnlockerLocks")
+  two_factor_methods   AuthTwoFactorMethod[]
+  user_roles           RbacUserRole[]            @relation("UserRoleUsers")
+  assigned_user_roles  RbacUserRole[]            @relation("UserRoleAssigners")
+  permission_overrides RbacUserPermissionOverride[] @relation("OverrideUsers")
+  assigned_overrides   RbacUserPermissionOverride[] @relation("OverrideAssigners")
+  permission_audits    RbacPermissionAudit[]     @relation("AuditUsers")
+  changed_audits       RbacPermissionAudit[]     @relation("AuditChangers")
+  organizations_contact OrgOrganization[]        @relation("OrgContact")
+  organizations_verif  OrgOrganization[]        @relation("OrgVerifier")
+  organizations_created OrgOrganization[]        @relation("OrgCreator")
+  organizations_modified OrgOrganization[]       @relation("OrgModifier")
+  organizations_deleted OrgOrganization[]        @relation("OrgDeleter")
+  organization_members OrgOrganizationMember[]
+  verifications        VerifUserVerification[]   @relation("VerifUsers")
+  reviewed_verifs      VerifUserVerification[]   @relation("VerifReviewers")
+  verification_histories VerifVerificationHistory[]
+  listings             ListListing[]             @relation("ListingOwners")
+  listings_created     ListListing[]             @relation("ListingCreators")
+  listings_modified    ListListing[]             @relation("ListingModifiers")
+  listings_deleted     ListListing[]             @relation("ListingDeleters")
+  service_requests     ServServiceRequest[]      @relation("ServiceCustomers")
+  assigned_services    ServServiceRequest[]      @relation("ServiceStaff")
+  chat_initiator       ChatConversation[]
+  chat_participants    ChatConversationParticipant[]
+  notify_queue         NotifyQueue[]
+  notify_preferences   NotifyPreference[]
+  saved_searches       WishSavedSearch[]
+  recently_viewed      WishRecentlyViewed[]
+  entity_changes       AuditEntityChange[]
+  blacklisted_by       FraudBlacklist[]
+  reports_submitted    FraudReport[]             @relation("ReportSubmitter")
+  reports_reviewed     FraudReport[]             @relation("ReportReviewer")
+  daily_views          AnlytListingView[]
+  refunds_created      PayRefund[]
+  transactions         PayTransaction[]
+  subscriptions        SubUserSubscription[]     @relation("UserSubscriptions")
+  invoices             PayInvoice[]              @relation("UserInvoices")
+  activity_logs        ActvActivityLog[]         @relation("UserActivityLogs")
+  workflow_history_actions WflowWorkflowHistory[] @relation("WorkflowHistoryActor")
+
+  // Backward compatibility named relations
+  favorites            Favorite[]
+  messages             Message[]
+  reviews              Review[]
+  inquiries            Inquiry[]                 @relation("InquiryUser")
+  inquiry_responses    Inquiry[]                 @relation("InquiryResponder")
+  visits               Visit[]
+  notifications        Notification[]
+  search_history       SearchHistory[]
+  assigned_hostel_id   BigInt?       @map("AssignedHostelID")
+  assigned_hostel      Hostel?       @relation("HostelAdmin", fields: [assigned_hostel_id], references: [id])
+
+  @@index([is_active])
+  @@index([is_deleted])
+  @@index([email, is_active])
+  @@map("auth_users")
+}
+
+model AuthUserProfile {
+  id                     BigInt    @id @default(autoincrement()) @map("UserProfileID")
+  user_id                BigInt    @unique @map("UserID")
+  first_name             String?   @map("FirstName") @db.VarChar(100)
+  last_name              String?   @map("LastName") @db.VarChar(100)
+  display_name           String?   @map("DisplayName") @db.VarChar(200)
+  date_of_birth          DateTime? @map("DateOfBirth") @db.Date
+  profile_picture_url    String?   @map("ProfilePictureURL") @db.VarChar(2000)
+  phone_number           String?   @unique @map("PhoneNumber") @db.VarChar(20)
+  phone_number_confirmed Boolean   @default(false) @map("PhoneNumberConfirmed")
+  email_confirmed        Boolean   @default(false) @map("EmailConfirmed")
+  preferred_language     String?   @default("en") @map("PreferredLanguage") @db.VarChar(10)
+  bio                    String?   @map("Bio") @db.VarChar(2000)
+  is_active              Boolean   @default(true) @map("IsActive")
+  is_deleted             Boolean   @default(false) @map("IsDeleted")
+  created_date           DateTime  @default(now()) @map("CreatedDate")
+  created_by             BigInt?   @map("CreatedBy")
+  modified_date          DateTime? @updatedAt @map("ModifiedDate")
+  modified_by            BigInt?   @map("ModifiedBy")
+  deleted_date           DateTime? @map("DeletedDate")
+  deleted_by             BigInt?   @map("DeletedBy")
+
+  user                   AuthUser  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([is_deleted])
+  @@map("auth_user_profiles")
+}
+
+model AuthUserPasswordHistory {
+  id            BigInt   @id @default(autoincrement()) @map("PasswordHistoryID")
+  user_id       BigInt   @map("UserID")
+  password_hash String   @map("PasswordHash") @db.VarChar(500)
+  created_date  DateTime @default(now()) @map("CreatedDate")
+
+  user          AuthUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_date(sort: Desc)])
+  @@map("auth_user_password_history")
+}
+
+model AuthRefreshToken {
+  id             BigInt         @id @default(autoincrement()) @map("RefreshTokenID")
+  user_id        BigInt         @map("UserID")
+  token_hash     String         @unique @map("TokenHash") @db.Char(64)
+  device_id      BigInt?        @map("DeviceID")
+  expires_date   DateTime       @map("ExpiresDate")
+  is_revoked     Boolean        @default(false) @map("IsRevoked")
+  revoked_date   DateTime?      @map("RevokedDate")
+  created_by_ip  String?        @map("CreatedByIP") @db.VarChar(45)
+  created_date   DateTime       @default(now()) @map("CreatedDate")
+
+  user           AuthUser       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  device         AuthUserDevice? @relation(fields: [device_id], references: [id], onDelete: SetNull)
+
+  @@index([token_hash])
+  @@index([user_id])
+  @@map("auth_refresh_tokens")
+}
+
+model AuthUserDevice {
+  id                 BigInt             @id @default(autoincrement()) @map("DeviceID")
+  user_id            BigInt             @map("UserID")
+  device_guid        String             @unique @default(uuid()) @map("DeviceGUID") @db.Uuid
+  device_name        String?            @map("DeviceName") @db.VarChar(200)
+  device_type        String?            @map("DeviceType") @db.VarChar(50)
+  operating_system   String?            @map("OperatingSystem") @db.VarChar(100)
+  client_app         String?            @map("ClientApp") @db.VarChar(100)
+  device_fingerprint String?            @map("DeviceFingerprint") @db.VarChar(255)
+  last_ip_address    String?            @map("LastIPAddress") @db.VarChar(45)
+  last_login_date    DateTime?          @map("LastLoginDate")
+  is_trusted         Boolean            @default(false) @map("IsTrusted")
+  is_active          Boolean            @default(true) @map("IsActive")
+  created_date       DateTime           @default(now()) @map("CreatedDate")
+
+  user               AuthUser           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  refresh_tokens     AuthRefreshToken[]
+  login_history      AuthLoginHistory[]
+  activity_logs      ActvActivityLog[]
+
+  @@index([user_id])
+  @@map("auth_user_devices")
+}
+
+model AuthLoginHistory {
+  id             BigInt          @id @default(autoincrement()) @map("LoginHistoryID")
+  user_id        BigInt?         @map("UserID")
+  device_id      BigInt?         @map("DeviceID")
+  login_email    String          @map("LoginEmail") @db.VarChar(256)
+  login_status   String          @map("LoginStatus") @db.VarChar(20)
+  failure_reason String?         @map("FailureReason") @db.VarChar(200)
+  ip_address     String?         @map("IPAddress") @db.VarChar(45)
+  user_agent     String?         @map("UserAgent") @db.VarChar(500)
+  location_geo   String?         @map("LocationGeo") @db.VarChar(200)
+  login_date     DateTime        @default(now()) @map("LoginDate")
+
+  user           AuthUser?       @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  device         AuthUserDevice? @relation(fields: [device_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, login_date(sort: Desc)])
+  @@index([login_email, login_date(sort: Desc)])
+  @@index([login_status, login_date(sort: Desc)])
+  @@map("auth_login_history")
+}
+
+model AuthUserOTP {
+  id           BigInt   @id @default(autoincrement()) @map("OTPID")
+  user_id      BigInt   @map("UserID")
+  otp_hash     String   @unique @map("OTPHash") @db.Char(64)
+  otp_type     String   @map("OTPType") @db.VarChar(20)
+  purpose      String   @map("Purpose") @db.VarChar(50)
+  expires_date DateTime @map("ExpiresDate")
+  attempt_count Int      @default(0) @map("AttemptCount")
+  max_attempts  Int      @default(5) @map("MaxAttempts")
+  is_validated Boolean  @default(false) @map("IsValidated")
+  created_date DateTime @default(now()) @map("CreatedDate")
+
+  user         AuthUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([otp_hash])
+  @@index([user_id, purpose, is_validated])
+  @@map("auth_user_otp")
+}
+
+model AuthAccountLock {
+  id          BigInt    @id @default(autoincrement()) @map("AccountLockID")
+  user_id     BigInt    @map("UserID")
+  lock_reason String?   @map("LockReason") @db.VarChar(200)
+  locked_date DateTime  @default(now()) @map("LockedDate")
+  unlock_date DateTime? @map("UnlockDate")
+  unlocked_by BigInt?   @map("UnlockedBy")
+  is_active   Boolean   @default(true) @map("IsActive")
+
+  user        AuthUser  @relation("UserLocks", fields: [user_id], references: [id], onDelete: Cascade)
+  unlocker    AuthUser? @relation("UnlockerLocks", fields: [unlocked_by], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@map("auth_account_locks")
+}
+
+model AuthTwoFactorMethod {
+  id             BigInt    @id @default(autoincrement()) @map("TwoFactorMethodID")
+  user_id        BigInt    @map("UserID")
+  method_type    String    @map("MethodType") @db.VarChar(20)
+  method_data    String?   @map("MethodData")
+  is_enabled     Boolean   @default(false) @map("IsEnabled")
+  is_default     Boolean   @default(false) @map("IsDefault")
+  last_used_date DateTime? @map("LastUsedDate")
+  created_date   DateTime  @default(now()) @map("CreatedDate")
+
+  user           AuthUser  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("auth_two_factor_methods")
+}
+
+// =============================================================================
+// SCHEMA 3: [RBAC] - Role-Based Access Control
+// =============================================================================
+
+model RbacPermissionCategory {
+  id            Int              @id @default(autoincrement()) @map("PermissionCategoryID")
+  name          String           @unique @map("CategoryName") @db.VarChar(100)
+  code          String           @unique @map("CategoryCode") @db.VarChar(50)
+  description   String?          @map("Description") @db.VarChar(500)
+  sort_order    Int              @default(0) @map("SortOrder")
+  icon          String?          @map("Icon") @db.VarChar(100)
+
+  permissions   RbacPermission[]
+
+  @@map("rbac_permission_categories")
+}
+
+model RbacPermission {
+  id                     Int                    @id @default(autoincrement()) @map("PermissionID")
+  permission_category_id Int                    @map("PermissionCategoryID")
+  name                   String                 @unique @map("PermissionName") @db.VarChar(200)
+  code                   String                 @unique @map("Code") @db.VarChar(200)
+  description            String?                @map("Description") @db.VarChar(500)
+  is_active              Boolean                @default(true) @map("IsActive")
+
+  category               RbacPermissionCategory @relation(fields: [permission_category_id], references: [id], onDelete: Cascade)
+  role_permissions       RbacRolePermission[]
+  overrides              RbacUserPermissionOverride[]
+  transitions            WflowTransition[]
+
+  @@map("rbac_permissions")
+}
+
+model RbacRole {
+  id            Int                  @id @default(autoincrement()) @map("RoleID")
+  name          String               @unique @map("RoleName") @db.VarChar(100)
+  code          String               @unique @map("RoleCode") @db.VarChar(50)
+  description   String?              @map("Description") @db.VarChar(500)
+  is_system_role Boolean             @default(false) @map("IsSystemRole")
+  is_active     Boolean              @default(true) @map("IsActive")
+  row_guid      String               @unique @default(uuid()) @map("RowGUID") @db.Uuid
+  is_deleted    Boolean              @default(false) @map("IsDeleted")
+  created_date  DateTime             @default(now()) @map("CreatedDate")
+  created_by    BigInt?              @map("CreatedBy")
+  modified_date DateTime?            @updatedAt @map("ModifiedDate")
+  modified_by   BigInt?              @map("ModifiedBy")
+
+  role_permissions RbacRolePermission[]
+  user_roles       RbacUserRole[]
+
+  @@map("rbac_roles")
+}
+
+model RbacRolePermission {
+  id            Int            @id @default(autoincrement()) @map("RolePermissionID")
+  role_id       Int            @map("RoleID")
+  permission_id Int            @map("PermissionID")
+
+  role          RbacRole       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission    RbacPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, permission_id])
+  @@map("rbac_role_permissions")
+}
+
+model RbacUserRole {
+  id            BigInt    @id @default(autoincrement()) @map("UserRoleID")
+  user_id       BigInt    @map("UserID")
+  role_id       Int       @map("RoleID")
+  assigned_by   BigInt?   @map("AssignedBy")
+  assigned_date DateTime  @default(now()) @map("AssignedDate")
+  expiry_date   DateTime? @map("ExpiryDate")
+
+  user          AuthUser  @relation("UserRoleUsers", fields: [user_id], references: [id], onDelete: Cascade)
+  role          RbacRole  @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  assigner      AuthUser? @relation("UserRoleAssigners", fields: [assigned_by], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, role_id])
+  @@map("rbac_user_roles")
+}
+
+model RbacUserPermissionOverride {
+  id            BigInt         @id @default(autoincrement()) @map("UserPermissionOverrideID")
+  user_id       BigInt         @map("UserID")
+  permission_id Int            @map("PermissionID")
+  is_granted    Boolean        @map("IsGranted")
+  assigned_by   BigInt?        @map("AssignedBy")
+  reason        String?        @map("Reason") @db.VarChar(500)
+  created_date  DateTime       @default(now()) @map("CreatedDate")
+
+  user          AuthUser       @relation("OverrideUsers", fields: [user_id], references: [id], onDelete: Cascade)
+  permission    RbacPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  assigner      AuthUser?      @relation("OverrideAssigners", fields: [assigned_by], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, permission_id])
+  @@map("rbac_user_permission_overrides")
+}
+
+model RbacPermissionAudit {
+  id           BigInt   @id @default(autoincrement()) @map("AuditID")
+  user_id      BigInt?  @map("UserID")
+  action_type  String   @map("ActionType") @db.VarChar(50)
+  old_value    String?  @map("OldValue")
+  new_value    String   @map("NewValue")
+  changed_by   BigInt?  @map("ChangedBy")
+  changed_date DateTime @default(now()) @map("ChangedDate")
+
+  user         AuthUser? @relation("AuditUsers", fields: [user_id], references: [id], onDelete: SetNull)
+  changer      AuthUser? @relation("AuditChangers", fields: [changed_by], references: [id], onDelete: SetNull)
+
+  @@index([changed_date])
+  @@map("rbac_permission_audit")
+}
+
+// =============================================================================
+// SCHEMA 4: [Org] - Organizations Module
+// =============================================================================
+
+model OrgOrganization {
+  id                      BigInt                   @id @default(autoincrement()) @map("OrganizationID")
+  row_guid                String                   @unique @default(uuid()) @map("OrganizationGUID") @db.Uuid
+  primary_contact_user_id BigInt                   @map("PrimaryContactUserID")
+  company_name            String                   @map("CompanyName") @db.VarChar(200)
+  legal_name              String?                  @map("LegalName") @db.VarChar(200)
+  tax_id                  String?                  @map("TaxID") @db.VarChar(50)
+  registration_number     String?                  @map("RegistrationNumber") @db.VarChar(100)
+  business_type           String?                  @map("BusinessType") @db.VarChar(50)
+  website                 String?                  @map("Website") @db.VarChar(500)
+  logo_url                String?                  @map("LogoURL") @db.VarChar(2000)
+  description             String?                  @map("Description")
+
+  verification_status     String                   @default("Pending") @map("VerificationStatus") @db.VarChar(20)
+  verified_by             BigInt?                  @map("VerifiedBy")
+  verified_date           DateTime?                @map("VerifiedDate")
+  rejection_reason        String?                  @map("RejectionReason") @db.VarChar(1000)
+  is_active               Boolean                  @default(true) @map("IsActive")
+  is_deleted              Boolean                  @default(false) @map("IsDeleted")
+  created_date            DateTime                 @default(now()) @map("CreatedDate")
+  created_by              BigInt?                  @map("CreatedBy")
+  modified_date           DateTime?                @updatedAt @map("ModifiedDate")
+  modified_by             BigInt?                  @map("ModifiedBy")
+  deleted_date            DateTime?                @map("DeletedDate")
+  deleted_by              BigInt?                  @map("DeletedBy")
+
+  contact_user            AuthUser                 @relation("OrgContact", fields: [primary_contact_user_id], references: [id])
+  verifier                AuthUser?                @relation("OrgVerifier", fields: [verified_by], references: [id])
+  creator                 AuthUser?                @relation("OrgCreator", fields: [created_by], references: [id])
+  modifier                AuthUser?                @relation("OrgModifier", fields: [modified_by], references: [id])
+  deleter                 AuthUser?                @relation("OrgDeleter", fields: [deleted_by], references: [id])
+  members                 OrgOrganizationMember[]
+  documents               OrgOrganizationDocument[]
+  listings                ListListing[]
+  ad_campaigns            AdCampaign[]
+
+  @@unique([company_name])
+  @@index([verification_status])
+  @@index([is_deleted])
+  @@map("org_organizations")
+}
+
+model OrgOrganizationMember {
+  id                   BigInt          @id @default(autoincrement()) @map("OrganizationMemberID")
+  organization_id      BigInt          @map("OrganizationID")
+  user_id              BigInt          @map("UserID")
+  member_role          String          @default("Agent") @map("MemberRole") @db.VarChar(50)
+  can_publish_listings Boolean         @default(true) @map("CanPublishListings")
+  joined_date          DateTime        @default(now()) @map("JoinedDate")
+  is_active            Boolean         @default(true) @map("IsActive")
+
+  organization         OrgOrganization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user                 AuthUser        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, user_id])
+  @@map("org_organization_members")
+}
+
+model OrgOrganizationDocument {
+  id              BigInt          @id @default(autoincrement()) @map("DocumentID")
+  organization_id BigInt          @map("OrganizationID")
+  document_type   String          @map("DocumentType") @db.VarChar(50)
+  document_url    String          @map("DocumentURL") @db.VarChar(2000)
+  file_name       String          @map("FileName") @db.VarChar(500)
+  file_size_kb    Int?            @map("FileSizeKB")
+  is_verified     Boolean         @default(false) @map("IsVerified")
+  expiry_date     DateTime?       @map("ExpiryDate") @db.Date
+  created_date    DateTime        @default(now()) @map("CreatedDate")
+
+  organization    OrgOrganization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("org_organization_documents")
+}
+
+// =============================================================================
+// SCHEMA 5: [Verif] - User Verification Module
+// =============================================================================
+
+model VerifUserVerification {
+  id                BigInt                     @id @default(autoincrement()) @map("VerificationID")
+  user_id           BigInt                     @map("UserID")
+  verification_type String                     @map("VerificationType") @db.VarChar(50)
+  verification_data String?                    @map("VerificationData")
+  status            String                     @default("Pending") @map("Status") @db.VarChar(20)
+  reviewer_user_id  BigInt?                    @map("ReviewerUserID")
+  review_notes      String?                    @map("ReviewNotes") @db.VarChar(1000)
+  reviewed_date     DateTime?                  @map("ReviewedDate")
+  expiry_date       DateTime?                  @map("ExpiryDate")
+  is_active         Boolean                    @default(true) @map("IsActive")
+  is_deleted        Boolean                    @default(false) @map("IsDeleted")
+  created_date      DateTime                   @default(now()) @map("CreatedDate")
+  created_by        BigInt?                    @map("CreatedBy")
+  modified_date     DateTime?                  @updatedAt @map("ModifiedDate")
+  modified_by       BigInt?                    @map("ModifiedBy")
+
+  user              AuthUser                   @relation("VerifUsers", fields: [user_id], references: [id], onDelete: Cascade)
+  reviewer          AuthUser?                  @relation("VerifReviewers", fields: [reviewer_user_id], references: [id], onDelete: SetNull)
+  documents         VerifVerificationDocument[]
+  histories         VerifVerificationHistory[]
+
+  @@index([user_id, verification_type])
+  @@index([status])
+  @@map("verif_user_verifications")
+}
+
+model VerifVerificationDocument {
+  id                       BigInt                @id @default(autoincrement()) @map("VerificationDocumentID")
+  verification_id          BigInt                @map("VerificationID")
+  document_type            String                @map("DocumentType") @db.VarChar(50)
+  document_url             String                @map("DocumentURL") @db.VarChar(2000)
+  file_name                String                @map("FileName") @db.VarChar(500)
+  file_size_kb             Int?                  @map("FileSizeKB")
+  face_match_score         Decimal?              @map("FaceMatchScore") @db.Decimal(5, 2)
+  ocr_data                 String?               @map("OCRData")
+  created_date             DateTime              @default(now()) @map("CreatedDate")
+
+  verification             VerifUserVerification @relation(fields: [verification_id], references: [id], onDelete: Cascade)
+
+  @@map("verif_verification_documents")
+}
+
+model VerifVerificationHistory {
+  id              BigInt                @id @default(autoincrement()) @map("HistoryID")
+  verification_id BigInt                @map("VerificationID")
+  from_status     String?               @map("FromStatus") @db.VarChar(20)
+  to_status       String                @map("ToStatus") @db.VarChar(20)
+  changed_by      BigInt                @map("ChangedBy")
+  comment         String?               @map("Comment") @db.VarChar(1000)
+  changed_date    DateTime              @default(now()) @map("ChangedDate")
+
+  verification    VerifUserVerification @relation(fields: [verification_id], references: [id], onDelete: Cascade)
+  changer         AuthUser              @relation(fields: [changed_by], references: [id])
+
+  @@index([changed_date])
+  @@map("verif_verification_history")
+}
+
+// =============================================================================
+// SCHEMA 6: [Mast] - Master Data Engine
+// =============================================================================
+
+model MastMasterGroup {
+  id          Int              @id @default(autoincrement()) @map("MasterGroupID")
+  code        String           @unique @map("GroupCode") @db.VarChar(50)
+  name        String           @map("GroupName") @db.VarChar(100)
+  description String?          @map("Description") @db.VarChar(500)
+  is_editable Boolean          @default(true) @map("IsEditable")
+  is_multiple Boolean          @default(true) @map("IsMultiple")
+  sort_order  Int              @default(0) @map("SortOrder")
+
+  items       MastMasterItem[]
+
+  @@map("mast_master_groups")
+}
+
+model MastMasterItem {
+  id             Int             @id @default(autoincrement()) @map("MasterItemID")
+  master_group_id Int             @map("MasterGroupID")
+  code           String          @unique @map("ItemCode") @db.VarChar(50)
+  name           String          @map("ItemName") @db.VarChar(200)
+  icon_url       String?         @map("IconURL") @db.VarChar(2000)
+  sort_order     Int             @default(0) @map("SortOrder")
+  is_active      Boolean         @default(true) @map("IsActive")
+  is_deleted     Boolean         @default(false) @map("IsDeleted")
+  created_date   DateTime        @default(now()) @map("CreatedDate")
+  created_by     BigInt?         @map("CreatedBy")
+  modified_date  DateTime?       @updatedAt @map("ModifiedDate")
+  modified_by    BigInt?         @map("ModifiedBy")
+
+  group          MastMasterGroup @relation(fields: [master_group_id], references: [id], onDelete: Cascade)
+  listing_features ListListingFeature[]
+  nearby_places  ListListingNearbyPlace[]
+  restrictions   ListListingRestriction[]
+  plan_features  SubPlanFeature[]
+
+  // Named relations to prevent format collision
+  listings_as_area_unit ListListing[] @relation("AreaUnit")
+  listings_as_condition ListListing[] @relation("PropertyCondition")
+  listings_as_ownership ListListing[] @relation("OwnershipType")
+
+  @@unique([master_group_id, code])
+  @@index([is_deleted])
+  @@map("mast_master_items")
+}
+
+// =============================================================================
+// SCHEMA 7: [List] - Listing Engine
+// =============================================================================
+
+model ListCategory {
+  id                 Int            @id @default(autoincrement()) @map("CategoryID")
+  name               String         @unique @map("CategoryName") @db.VarChar(100)
+  parent_category_id Int?           @map("ParentCategoryID")
+  slug               String         @unique @map("Slug") @db.VarChar(100)
+  description        String?        @map("Description") @db.VarChar(500)
+  listing_type       String         @map("ListingType") @db.VarChar(20)
+  icon_url           String?        @map("IconURL") @db.VarChar(2000)
+  is_active          Boolean        @default(true) @map("IsActive")
+
+  parent             ListCategory?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [id])
+  children           ListCategory[] @relation("CategoryHierarchy")
+  listings           ListListing[]
+
+  @@map("list_categories")
+}
+
+model ListListing {
+  id                    BigInt         @id @default(autoincrement()) @map("ListingID")
+  row_guid              String         @unique @default(uuid()) @map("ListingGUID") @db.Uuid
+  user_id               BigInt         @map("UserID")
+  organization_id       BigInt?        @map("OrganizationID")
+  category_id           Int            @map("CategoryID")
+  title                 String         @map("Title") @db.VarChar(500)
+  description           String?        @map("Description")
+  purpose               String         @map("Purpose") @db.VarChar(20)
+  price                 Decimal?       @map("Price") @db.Decimal(18, 2)
+  price_currency        String         @default("USD") @map("PriceCurrency") @db.Char(3)
+  is_price_negotiable   Boolean        @default(false) @map("IsPriceNegotiable")
+  deposit               Decimal?       @map("Deposit") @db.Decimal(18, 2)
+  area                  Decimal?       @map("Area") @db.Decimal(10, 2)
+  area_unit_id          Int?           @map("AreaUnitID")
+  bedrooms              Int?           @map("Bedrooms") @db.SmallInt
+  bathrooms             Int?           @map("Bathrooms") @db.SmallInt
+  total_rooms           Int?           @map("TotalRooms") @db.SmallInt
+  floor_number          Int?           @map("FloorNumber") @db.SmallInt
+  total_floors          Int?           @map("TotalFloors") @db.SmallInt
+  construction_year     Int?           @map("ConstructionYear") @db.SmallInt
+  available_from        DateTime?      @map("AvailableFrom") @db.Date
+  property_condition_id Int?           @map("PropertyConditionID")
+  ownership_type_id     Int?           @map("OwnershipTypeID")
+  latitude              Decimal?       @map("Latitude") @db.Decimal(10, 8)
+  longitude             Decimal?       @map("Longitude") @db.Decimal(11, 8)
+  street_address        String?        @map("StreetAddress") @db.VarChar(500)
+  locality_id           Int?           @map("LocalityID")
+  zip_code              String?        @map("ZipCode") @db.VarChar(20)
+  slug                  String         @unique @map("Slug") @db.VarChar(600)
+  status                String         @default("Draft") @map("Status") @db.VarChar(20)
+  view_count            Int            @default(0) @map("ViewCount")
+  inquiry_count         Int            @default(0) @map("InquiryCount")
+  is_featured           Boolean        @default(false) @map("IsFeatured")
+  is_published          Boolean        @default(false) @map("IsPublished")
+  is_active             Boolean        @default(true) @map("IsActive")
+  is_deleted            Boolean        @default(false) @map("IsDeleted")
+  created_date          DateTime       @default(now()) @map("CreatedDate")
+  created_by            BigInt?        @map("CreatedBy")
+  modified_date         DateTime?      @updatedAt @map("ModifiedDate")
+  modified_by           BigInt?        @map("ModifiedBy")
+  deleted_date          DateTime?      @map("DeletedDate")
+  deleted_by             BigInt?        @map("DeletedBy")
+
+  user                  AuthUser       @relation("ListingOwners", fields: [user_id], references: [id])
+  creator               AuthUser?      @relation("ListingCreators", fields: [created_by], references: [id])
+  modifier              AuthUser?      @relation("ListingModifiers", fields: [modified_by], references: [id])
+  deleter               AuthUser?      @relation("ListingDeleters", fields: [deleted_by], references: [id])
+  organization          OrgOrganization? @relation(fields: [organization_id], references: [id])
+  category              ListCategory   @relation(fields: [category_id], references: [id])
+  locality              GeoLocality?   @relation(fields: [locality_id], references: [id])
+  
+  // Explicitly named relations to prevent format collision
+  area_unit             MastMasterItem? @relation("AreaUnit", fields: [area_unit_id], references: [id])
+  property_condition    MastMasterItem? @relation("PropertyCondition", fields: [property_condition_id], references: [id])
+  ownership_type        MastMasterItem? @relation("OwnershipType", fields: [ownership_type_id], references: [id])
+
+  features              ListListingFeature[]
+  nearby_places         ListListingNearbyPlace[]
+  restrictions          ListListingRestriction[]
+  media_assets          MediaAsset[]
+  service_requests      ServServiceRequest[]
+  recently_viewed       WishRecentlyViewed[]
+  views_anlyt           AnlytListingView[]
+  boosts                SubListingBoost[]
+  hostel                Hostel?
+
+  // Compatibility relations
+  favorites             Favorite[]
+  reviews               Review[]
+  inquiries             Inquiry[]
+  visits                Visit[]
+
+  @@index([user_id, status])
+  @@index([category_id, status])
+  @@index([locality_id, price])
+  @@index([status])
+  @@index([is_featured])
+  @@index([created_date])
+  @@index([latitude, longitude])
+  @@map("list_listings")
+}
+
+model ListListingFeature {
+  id             BigInt         @id @default(autoincrement()) @map("ListingFeatureID")
+  listing_id     BigInt         @map("ListingID")
+  master_item_id Int            @map("MasterItemID")
+  custom_value   String?        @map("CustomValue") @db.VarChar(200)
+
+  listing        ListListing    @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+  master_item    MastMasterItem @relation(fields: [master_item_id], references: [id], onDelete: Cascade)
+
+  @@unique([listing_id, master_item_id])
+  @@map("list_listing_features")
+}
+
+model ListListingNearbyPlace {
+  id                BigInt         @id @default(autoincrement()) @map("NearbyPlaceID")
+  listing_id        BigInt         @map("ListingID")
+  place_type_id     Int            @map("PlaceTypeID")
+  distance_in_meters Int?          @map("DistanceInMeters")
+  place_name        String?        @map("PlaceName") @db.VarChar(200)
+
+  listing           ListListing    @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+  place_type        MastMasterItem @relation(fields: [place_type_id], references: [id], onDelete: Cascade)
+
+  @@unique([listing_id, place_type_id, place_name])
+  @@map("list_listing_nearby_places")
+}
+
+model ListListingRestriction {
+  id                  BigInt         @id @default(autoincrement()) @map("RestrictionID")
+  listing_id          BigInt         @map("ListingID")
+  restriction_type_id Int            @map("RestrictionTypeID")
+
+  listing             ListListing    @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+  restriction_type    MastMasterItem @relation(fields: [restriction_type_id], references: [id], onDelete: Cascade)
+
+  @@unique([listing_id, restriction_type_id])
+  @@map("list_listing_restrictions")
+}
+
+// =============================================================================
+// SCHEMA 8: [Media] - Media Management Module
+// =============================================================================
+
+model MediaAsset {
+  id                BigInt      @id @default(autoincrement()) @map("AssetID")
+  listing_id        BigInt      @map("ListingID")
+  asset_type        String      @map("AssetType") @db.VarChar(20)
+  file_name         String      @map("FileName") @db.VarChar(500)
+  original_file_name String?     @map("OriginalFileName") @db.VarChar(500)
+  file_size_kb      Int?        @map("FileSizeKB")
+  mime_type         String?     @map("MimeType") @db.VarChar(100)
+  storage_provider  String?     @map("StorageProvider") @db.VarChar(50)
+  storage_path      String      @map("StoragePath") @db.VarChar(2000)
+  thumbnail_path    String?     @map("ThumbnailPath") @db.VarChar(2000)
+  is_primary        Boolean     @default(false) @map("IsPrimary")
+  display_order     Int         @default(0) @map("DisplayOrder")
+  title             String?     @map("Title") @db.VarChar(200)
+  description       String?     @map("Description") @db.VarChar(500)
+  width             Int?        @map("Width")
+  height            Int?        @map("Height")
+  duration          Int?        @map("Duration")
+  is_active         Boolean     @default(true) @map("IsActive")
+  is_deleted        Boolean     @default(false) @map("IsDeleted")
+  created_date      DateTime    @default(now()) @map("CreatedDate")
+  created_by        BigInt?     @map("CreatedBy")
+  modified_date     DateTime?   @updatedAt @map("ModifiedDate")
+  modified_by       BigInt?     @map("ModifiedBy")
+
+  listing           ListListing @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+
+  @@index([listing_id, display_order])
+  @@map("media_assets")
+}
+
+// =============================================================================
+// SCHEMA 9: [Wflow] - Workflow Engine
+// =============================================================================
+
+model WflowStatus {
+  id          Int                 @id @default(autoincrement()) @map("StatusID")
+  code        String              @map("StatusCode") @db.VarChar(20)
+  name        String              @map("StatusName") @db.VarChar(50)
+  entity_type String              @map("EntityType") @db.VarChar(50)
+  color_code  String?             @map("ColorCode") @db.VarChar(7)
+  is_initial  Boolean             @default(false) @map("IsInitial")
+  is_final    Boolean             @default(false) @map("IsFinal")
+
+  transitions_from WflowTransition[] @relation("TransitionFrom")
+  transitions_to   WflowTransition[] @relation("TransitionTo")
+  histories_from   WflowWorkflowHistory[] @relation("HistoryFromStatus")
+  histories_to     WflowWorkflowHistory[] @relation("HistoryToStatus")
+
+  @@unique([code, entity_type])
+  @@map("wflow_statuses")
+}
+
+model WflowTransition {
+  id                     Int            @id @default(autoincrement()) @map("TransitionID")
+  entity_type            String         @map("EntityType") @db.VarChar(50)
+  from_status_id         Int            @map("FromStatusID")
+  to_status_id           Int            @map("ToStatusID")
+  required_permission_id Int?           @map("RequiredPermissionID")
+  is_automatic           Boolean        @default(false) @map("IsAutomatic")
+
+  from_status            WflowStatus    @relation("TransitionFrom", fields: [from_status_id], references: [id])
+  to_status              WflowStatus    @relation("TransitionTo", fields: [to_status_id], references: [id])
+  required_permission    RbacPermission? @relation(fields: [required_permission_id], references: [id], onDelete: SetNull)
+
+  @@unique([entity_type, from_status_id, to_status_id])
+  @@map("wflow_transitions")
+}
+
+model WflowWorkflowHistory {
+  id              BigInt      @id @default(autoincrement()) @map("WorkflowHistoryID")
+  entity_type     String      @map("EntityType") @db.VarChar(50)
+  entity_id       BigInt      @map("EntityID")
+  from_status_id  Int?        @map("FromStatusID")
+  to_status_id    Int         @map("ToStatusID")
+  action_by       BigInt      @map("ActionBy")
+  comment         String?     @map("Comment") @db.VarChar(1000)
+  transition_date DateTime    @default(now()) @map("TransitionDate")
+
+  from_status     WflowStatus? @relation("HistoryFromStatus", fields: [from_status_id], references: [id])
+  to_status       WflowStatus  @relation("HistoryToStatus", fields: [to_status_id], references: [id])
+  actor           AuthUser    @relation("WorkflowHistoryActor", fields: [action_by], references: [id])
+
+  @@index([entity_type, entity_id, transition_date(sort: Desc)])
+  @@map("wflow_workflow_history")
+}
+
+// =============================================================================
+// SCHEMA 10: [Sub] - Subscription & Boost Module
+// =============================================================================
+
+model SubPlan {
+  id                      Int                  @id @default(autoincrement()) @map("PlanID")
+  name                    String               @map("PlanName") @db.VarChar(100)
+  code                    String               @unique @map("PlanCode") @db.VarChar(20)
+  monthly_price           Decimal              @default(0.00) @map("MonthlyPrice") @db.Decimal(10, 2)
+  yearly_price            Decimal              @default(0.00) @map("YearlyPrice") @db.Decimal(10, 2)
+  currency                String               @default("USD") @map("Currency") @db.Char(3)
+  listing_limit           Int                  @default(5) @map("ListingLimit")
+  boost_credits_per_month Int                  @default(0) @map("BoostCreditsPerMonth")
+  priority_ranking        Int                  @default(0) @map("PriorityRanking")
+  has_verified_badge      Boolean              @default(false) @map("HasVerifiedBadge")
+  description             String?              @map("Description") @db.VarChar(500)
+  is_active               Boolean              @default(true) @map("IsActive")
+  created_date            DateTime             @default(now()) @map("CreatedDate")
+
+  plan_features           SubPlanFeature[]
+  subscriptions           SubUserSubscription[]
+
+  @@map("sub_plans")
+}
+
+model SubPlanFeature {
+  id            Int            @id @default(autoincrement()) @map("PlanFeatureID")
+  plan_id       Int            @map("PlanID")
+  feature_id    Int            @map("FeatureID")
+  feature_value String?        @map("FeatureValue") @db.VarChar(200)
+
+  plan          SubPlan        @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  feature       MastMasterItem @relation(fields: [feature_id], references: [id], onDelete: Cascade)
+
+  @@unique([plan_id, feature_id])
+  @@map("sub_plan_features")
+}
+
+model SubUserSubscription {
+  id                      BigInt            @id @default(autoincrement()) @map("SubscriptionID")
+  user_id                 BigInt            @map("UserID")
+  plan_id                 Int               @map("PlanID")
+  start_date              DateTime          @map("StartDate")
+  end_date                DateTime          @map("EndDate")
+  is_auto_renew           Boolean           @default(false) @map("IsAutoRenew")
+  status                  String            @default("Active") @map("Status") @db.VarChar(20)
+  cancelled_date          DateTime?         @map("CancelledDate")
+  payment_transaction_id  BigInt?           @map("PaymentTransactionID")
+  boost_credits_remaining Int               @default(0) @map("BoostCreditsRemaining")
+  is_deleted              Boolean           @default(false) @map("IsDeleted")
+  created_date            DateTime          @default(now()) @map("CreatedDate")
+  created_by              BigInt?           @map("CreatedBy")
+  modified_date           DateTime?         @updatedAt @map("ModifiedDate")
+  modified_by             BigInt?           @map("ModifiedBy")
+
+  user                    AuthUser          @relation("UserSubscriptions", fields: [user_id], references: [id], onDelete: Cascade)
+  plan                    SubPlan           @relation(fields: [plan_id], references: [id])
+  transaction             PayTransaction?   @relation(fields: [payment_transaction_id], references: [id])
+  boosts                  SubListingBoost[]
+
+  @@index([user_id, status])
+  @@index([end_date])
+  @@map("sub_user_subscriptions")
+}
+
+model SubListingBoost {
+  id              BigInt               @id @default(autoincrement()) @map("BoostID")
+  listing_id      BigInt               @map("ListingID")
+  subscription_id BigInt?              @map("SubscriptionID")
+  boost_type      String               @map("BoostType") @db.VarChar(20)
+  start_date      DateTime             @map("StartDate")
+  end_date        DateTime             @map("EndDate")
+  is_active       Boolean              @default(true) @map("IsActive")
+  created_date    DateTime             @default(now()) @map("CreatedDate")
+
+  listing         ListListing          @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+  subscription    SubUserSubscription? @relation(fields: [subscription_id], references: [id], onDelete: SetNull)
+
+  @@index([listing_id, is_active])
+  @@index([end_date])
+  @@map("sub_listing_boosts")
+}
+
+// =============================================================================
+// SCHEMA 11: [Pay] - Payment Module
+// =============================================================================
+
+model PayPaymentGateway {
+  id                  Int              @id @default(autoincrement()) @map("GatewayID")
+  name                String           @unique @map("GatewayName") @db.VarChar(100)
+  code                String           @unique @map("GatewayCode") @db.VarChar(20)
+  configuration       String?          @map("Configuration")
+  supported_currencies String?         @map("SupportedCurrencies") @db.VarChar(500)
+  supported_countries String?          @map("SupportedCountries") @db.VarChar(500)
+  is_active           Boolean          @default(true) @map("IsActive")
+  webhook_url         String?          @map("WebhookURL") @db.VarChar(2000)
+  created_date        DateTime         @default(now()) @map("CreatedDate")
+
+  transactions        PayTransaction[]
+
+  @@map("pay_payment_gateways")
+}
+
+model PayTransaction {
+  id                    BigInt             @id @default(autoincrement()) @map("TransactionID")
+  guid                  String             @unique @default(uuid()) @map("TransactionGUID") @db.Uuid
+  user_id               BigInt             @map("UserID")
+  gateway_id            Int                @map("GatewayID")
+  entity_type           String             @map("EntityType") @db.VarChar(50)
+  entity_id             BigInt             @map("EntityID")
+  amount                Decimal            @map("Amount") @db.Decimal(18, 2)
+  currency              String             @default("USD") @map("Currency") @db.Char(3)
+  tax_amount            Decimal?           @default(0.00) @map("TaxAmount") @db.Decimal(18, 2)
+  total_amount          Decimal            @map("TotalAmount") @db.Decimal(18, 2)
+  status                String             @default("Initiated") @map("Status") @db.VarChar(20)
+  gateway_transaction_id String?           @map("GatewayTransactionID") @db.VarChar(200)
+  gateway_response      String?            @map("GatewayResponse")
+  failure_reason        String?            @map("FailureReason") @db.VarChar(500)
+  transaction_date      DateTime           @default(now()) @map("TransactionDate")
+  completed_date        DateTime?          @map("CompletedDate")
+  ip_address            String?            @map("IPAddress") @db.VarChar(45)
+
+  user                  AuthUser           @relation(fields: [user_id], references: [id])
+  gateway               PayPaymentGateway  @relation(fields: [gateway_id], references: [id])
+  subscriptions         SubUserSubscription[]
+  invoices              PayInvoice[]
+  refunds               PayRefund[]
+  service_requests      ServServiceRequest[]
+
+  @@index([user_id, transaction_date(sort: Desc)])
+  @@index([entity_type, entity_id])
+  @@index([status])
+  @@index([gateway_transaction_id])
+  @@map("pay_transactions")
+}
+
+model PayInvoice {
+  id             BigInt         @id @default(autoincrement()) @map("InvoiceID")
+  invoice_number String         @unique @map("InvoiceNumber") @db.VarChar(50)
+  transaction_id BigInt         @map("TransactionID")
+  user_id        BigInt         @map("UserID")
+  invoice_date   DateTime       @default(now()) @map("InvoiceDate")
+  due_date       DateTime?      @map("DueDate")
+  invoice_data   String?        @map("InvoiceData")
+  invoice_url    String?        @map("InvoiceURL") @db.VarChar(2000)
+  created_date   DateTime       @default(now()) @map("CreatedDate")
+
+  transaction    PayTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  user           AuthUser       @relation("UserInvoices", fields: [user_id], references: [id])
+
+  @@map("pay_invoices")
+}
+
+model PayRefund {
+  id                 BigInt         @id @default(autoincrement()) @map("RefundID")
+  transaction_id     BigInt         @map("TransactionID")
+  refund_amount      Decimal        @map("RefundAmount") @db.Decimal(18, 2)
+  refund_reason      String?        @map("RefundReason") @db.VarChar(500)
+  status             String         @default("Pending") @map("Status") @db.VarChar(20)
+  gateway_refund_id  String?        @map("GatewayRefundID") @db.VarChar(200)
+  processed_date     DateTime?      @map("ProcessedDate")
+  created_date       DateTime       @default(now()) @map("CreatedDate")
+  created_by         BigInt         @map("CreatedBy")
+
+  transaction        PayTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  creator            AuthUser       @relation(fields: [created_by], references: [id])
+
+  @@map("pay_refunds")
+}
+
+// =============================================================================
+// SCHEMA 12: [Ad] - Advertisement Module
+// =============================================================================
+
+model AdCampaign {
+  id             BigInt          @id @default(autoincrement()) @map("CampaignID")
+  name           String          @map("CampaignName") @db.VarChar(200)
+  advertiser_id  BigInt?         @map("AdvertiserID")
+  campaign_type  String          @map("CampaignType") @db.VarChar(20)
+  budget         Decimal?        @map("Budget") @db.Decimal(18, 2)
+  daily_budget   Decimal?        @map("DailyBudget") @db.Decimal(18, 2)
+  start_date     DateTime        @map("StartDate")
+  end_date       DateTime        @map("EndDate")
+  target_url     String?         @map("TargetURL") @db.VarChar(2000)
+  status         String          @default("Draft") @map("Status") @db.VarChar(20)
+  created_date   DateTime        @default(now()) @map("CreatedDate")
+  created_by     BigInt?         @map("CreatedBy")
+
+  advertiser     OrgOrganization? @relation(fields: [advertiser_id], references: [id])
+  banners        AdBanner[]
+
+  @@map("ad_campaigns")
+}
+
+model AdBanner {
+  id                BigInt        @id @default(autoincrement()) @map("BannerID")
+  campaign_id       BigInt        @map("CampaignID")
+  name              String        @map("BannerName") @db.VarChar(200)
+  placement         String        @map("Placement") @db.VarChar(50)
+  image_url         String        @map("ImageURL") @db.VarChar(2000)
+  target_url        String?       @map("TargetURL") @db.VarChar(2000)
+  alt_text          String?       @map("AltText") @db.VarChar(500)
+  priority          Int           @default(0) @map("Priority")
+  total_clicks      BigInt        @default(0) @map("TotalClicks")
+  total_impressions BigInt        @default(0) @map("TotalImpressions")
+  is_active         Boolean       @default(true) @map("IsActive")
+  created_date      DateTime      @default(now()) @map("CreatedDate")
+
+  campaign          AdCampaign    @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  analytics         AdAnalytic[]
+
+  @@index([is_active])
+  @@map("ad_banners")
+}
+
+model AdAnalytic {
+  id          BigInt   @id @default(autoincrement()) @map("AdAnalyticID")
+  banner_id   BigInt   @map("BannerID")
+  event_date  DateTime @map("EventDate") @db.Date
+  impressions Int      @default(0) @map("Impressions")
+  clicks      Int      @default(0) @map("Clicks")
+  ctr         Decimal  @default(0) @map("CTR") @db.Decimal(7, 4)
+  spend       Decimal  @default(0) @map("Spend") @db.Decimal(10, 2)
+
+  banner      AdBanner @relation(fields: [banner_id], references: [id], onDelete: Cascade)
+
+  @@unique([banner_id, event_date])
+  @@map("ad_analytics")
+}
+
+// =============================================================================
+// SCHEMA 13: [Serv] - Services Module
+// =============================================================================
+
+model ServServiceCategory {
+  id          Int           @id @default(autoincrement()) @map("ServiceCategoryID")
+  code        String        @unique @map("CategoryCode") @db.VarChar(50)
+  name        String        @map("CategoryName") @db.VarChar(100)
+  description String?       @map("Description") @db.VarChar(500)
+  is_active   Boolean       @default(true) @map("IsActive")
+
+  services    ServService[]
+
+  @@map("serv_service_categories")
+}
+
+model ServService {
+  id                  Int                 @id @default(autoincrement()) @map("ServiceID")
+  service_category_id Int                 @map("ServiceCategoryID")
+  code                String              @unique @map("ServiceCode") @db.VarChar(50)
+  name                String              @map("ServiceName") @db.VarChar(200)
+  description         String?             @map("Description")
+  base_price          Decimal             @map("BasePrice") @db.Decimal(18, 2)
+  currency            String              @default("USD") @map("Currency") @db.Char(3)
+  is_active           Boolean             @default(true) @map("IsActive")
+  created_date        DateTime            @default(now()) @map("CreatedDate")
+
+  category            ServServiceCategory @relation(fields: [service_category_id], references: [id], onDelete: Cascade)
+  requests            ServServiceRequest[]
+
+  @@map("serv_services")
+}
+
+model ServServiceRequest {
+  id              BigInt         @id @default(autoincrement()) @map("ServiceRequestID")
+  user_id         BigInt         @map("UserID")
+  service_id      Int            @map("ServiceID")
+  listing_id      BigInt?        @map("ListingID")
+  requested_price Decimal        @map("RequestedPrice") @db.Decimal(18, 2)
+  status          String         @default("Pending") @map("Status") @db.VarChar(20)
+  request_data    String?        @map("RequestData")
+  assigned_to     BigInt?        @map("AssignedTo")
+  completed_date  DateTime?      @map("CompletedDate")
+  transaction_id  BigInt?        @map("TransactionID")
+  created_date    DateTime       @default(now()) @map("CreatedDate")
+
+  user            AuthUser       @relation("ServiceCustomers", fields: [user_id], references: [id], onDelete: Cascade)
+  staff           AuthUser?      @relation("ServiceStaff", fields: [assigned_to], references: [id], onDelete: SetNull)
+  service         ServService    @relation(fields: [service_id], references: [id])
+  listing         ListListing?   @relation(fields: [listing_id], references: [id], onDelete: SetNull)
+  transaction     PayTransaction? @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("serv_service_requests")
+}
+
+// =============================================================================
+// SCHEMA 14: [Chat] - Chat Module
+// =============================================================================
+
+model ChatConversation {
+  id                   BigInt                        @id @default(autoincrement()) @map("ConversationID")
+  guid                 String                        @unique @default(uuid()) @map("ConversationGUID") @db.Uuid
+  subject_entity_type  String                        @map("SubjectEntityType") @db.VarChar(50)
+  subject_entity_id    BigInt                        @map("SubjectEntityID")
+  initiated_by         BigInt                        @map("InitiatedBy")
+  last_message_date    DateTime?                     @map("LastMessageDate")
+  last_message_preview String?                       @map("LastMessagePreview") @db.VarChar(200)
+  message_count        Int                           @default(0) @map("MessageCount")
+  is_active            Boolean                       @default(true) @map("IsActive")
+  created_date         DateTime                      @default(now()) @map("CreatedDate")
+
+  initiator            AuthUser                      @relation(fields: [initiated_by], references: [id], onDelete: Cascade)
+  participants         ChatConversationParticipant[]
+  messages             Message[]
+
+  @@index([subject_entity_type, subject_entity_id])
+  @@map("chat_conversations")
+}
+
+model ChatConversationParticipant {
+  id              BigInt           @id @default(autoincrement()) @map("ParticipantID")
+  conversation_id BigInt           @map("ConversationID")
+  user_id         BigInt           @map("UserID")
+  last_read_date  DateTime?        @map("LastReadDate")
+  is_muted        Boolean          @default(false) @map("IsMuted")
+  joined_date     DateTime         @default(now()) @map("JoinedDate")
+
+  conversation    ChatConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  user            AuthUser         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([conversation_id, user_id])
+  @@map("chat_conversation_participants")
+}
+
+// =============================================================================
+// SCHEMA 15: [Notify] - Notification Center
+// =============================================================================
+
+model NotifyTemplate {
+  id                 Int           @id @default(autoincrement()) @map("TemplateID")
+  code               String        @unique @map("TemplateCode") @db.VarChar(100)
+  name               String        @map("TemplateName") @db.VarChar(200)
+  subject            String?       @map("Subject") @db.VarChar(500)
+  body_html          String?       @map("BodyHTML")
+  body_text          String?       @map("BodyText")
+  supported_channels String        @default("Email,SMS,Push,InApp") @map("SupportedChannels") @db.VarChar(100)
+  variables          String?       @map("Variables")
+  is_active          Boolean       @default(true) @map("IsActive")
+  created_date       DateTime      @default(now()) @map("CreatedDate")
+
+  queue              NotifyQueue[]
+
+  @@map("notify_templates")
+}
+
+model NotifyQueue {
+  id            BigInt         @id @default(autoincrement()) @map("NotificationID")
+  user_id       BigInt         @map("UserID")
+  template_id   Int            @map("TemplateID")
+  channel       String         @map("Channel") @db.VarChar(20)
+  recipient     String         @map("Recipient") @db.VarChar(500)
+  data          String?        @map("Data")
+  status        String         @default("Pending") @map("Status") @db.VarChar(20)
+  sent_date     DateTime?      @map("SentDate")
+  retry_count   Int            @default(0) @map("RetryCount")
+  error_message String?        @map("ErrorMessage") @db.VarChar(500)
+  created_date  DateTime       @default(now()) @map("CreatedDate")
+
+  user          AuthUser       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  template      NotifyTemplate @relation(fields: [template_id], references: [id], onDelete: Cascade)
+
+  @@index([status, created_date])
+  @@map("notify_queue")
+}
+
+model NotifyPreference {
+  id                BigInt   @id @default(autoincrement()) @map("PreferenceID")
+  user_id           BigInt   @map("UserID")
+  notification_type String   @map("NotificationType") @db.VarChar(50)
+  channel           String   @map("Channel") @db.VarChar(20)
+  is_enabled        Boolean  @default(true) @map("IsEnabled")
+
+  user              AuthUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, notification_type, channel])
+  @@map("notify_preferences")
+}
+
+// =============================================================================
+// SCHEMA 16: [Wish] - Wishlist & Favorites
+// =============================================================================
+
+model WishSavedSearch {
+  id                 BigInt    @id @default(autoincrement()) @map("SavedSearchID")
+  user_id            BigInt    @map("UserID")
+  name               String?   @map("SearchName") @db.VarChar(200)
+  criteria           String    @map("SearchCriteria")
+  alert_frequency    String?   @map("AlertFrequency") @db.VarChar(20)
+  last_notified_date DateTime? @map("LastNotifiedDate")
+  created_date       DateTime  @default(now()) @map("CreatedDate")
+
+  user               AuthUser  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("wish_saved_searches")
+}
+
+model WishRecentlyViewed {
+  id            BigInt      @id @default(autoincrement()) @map("ViewID")
+  user_id      BigInt      @map("UserID")
+  listing_id    BigInt      @map("ListingID")
+  viewed_date   DateTime    @default(now()) @map("ViewedDate")
+  view_duration Int?        @map("ViewDuration")
+
+  user          AuthUser    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  listing       ListListing @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, viewed_date(sort: Desc)])
+  @@map("wish_recently_viewed")
+}
+
+// =============================================================================
+// SCHEMA 18: [Audit] - Audit Trail
+// =============================================================================
+
+model AuditEntityChange {
+  id           BigInt             @id @default(autoincrement()) @map("AuditID")
+  entity_type  String             @map("EntityType") @db.VarChar(50)
+  entity_id    BigInt             @map("EntityID")
+  action_type  String             @map("ActionType") @db.VarChar(20)
+  old_values   String?            @map("OldValues")
+  new_values   String?            @map("NewValues")
+  changed_by   BigInt?            @map("ChangedBy")
+  changed_date DateTime           @default(now()) @map("ChangedDate")
+  ip_address   String?            @map("IPAddress") @db.VarChar(45)
+  session_id   String?            @map("SessionID") @db.Uuid
+
+  user         AuthUser?          @relation(fields: [changed_by], references: [id], onDelete: SetNull)
+  field_changes AuditFieldChange[]
+
+  @@index([entity_type, entity_id, changed_date(sort: Desc)])
+  @@map("audit_entity_changes")
+}
+
+model AuditFieldChange {
+  id              BigInt            @id @default(autoincrement()) @map("FieldChangeID")
+  audit_id        BigInt            @map("AuditID")
+  field_name      String            @map("FieldName") @db.VarChar(200)
+  old_value       String?           @map("OldValue")
+  new_value       String?           @map("NewValue")
+
+  audit           AuditEntityChange @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+
+  @@map("audit_field_changes")
+}
+
+// =============================================================================
+// SCHEMA 19: [Actv] - Activity Log
+// =============================================================================
+
+model ActvActivityLog {
+  id                   BigInt          @id @default(autoincrement()) @map("ActivityID")
+  user_id              BigInt          @map("UserID")
+  activity_type        String          @map("ActivityType") @db.VarChar(50)
+  activity_description String?         @map("ActivityDescription") @db.VarChar(500)
+  entity_type          String?         @map("EntityType") @db.VarChar(50)
+  entity_id            BigInt?         @map("EntityID")
+  details              String?         @map("Details")
+  ip_address           String?         @map("IPAddress") @db.VarChar(45)
+  device_id            BigInt?         @map("DeviceID")
+  created_date         DateTime        @default(now()) @map("CreatedDate")
+
+  user                 AuthUser        @relation("UserActivityLogs", fields: [user_id], references: [id], onDelete: Cascade)
+  device               AuthUserDevice? @relation(fields: [device_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, created_date(sort: Desc)])
+  @@index([activity_type, created_date(sort: Desc)])
+  @@map("actv_activity_log")
+}
+
+// =============================================================================
+// SCHEMA 20: [Fraud] - Fraud Detection
+// =============================================================================
+
+model FraudReport {
+  id                 BigInt          @id @default(autoincrement()) @map("ReportID")
+  reported_by_user_id BigInt          @map("ReportedByUserID")
+  target_entity_type String          @map("TargetEntityType") @db.VarChar(20)
+  target_entity_id   BigInt          @map("TargetEntityID")
+  report_reason      String          @map("ReportReason") @db.VarChar(50)
+  description        String?         @map("Description") @db.VarChar(2000)
+  evidence_urls      String?         @map("EvidenceURLs")
+  status             String          @default("Open") @map("Status") @db.VarChar(20)
+  reviewed_by        BigInt?         @map("ReviewedBy")
+  resolution         String?         @map("Resolution") @db.VarChar(1000)
+  created_date       DateTime        @default(now()) @map("CreatedDate")
+
+  reporter           AuthUser        @relation("ReportSubmitter", fields: [reported_by_user_id], references: [id], onDelete: Cascade)
+  reviewer           AuthUser?       @relation("ReportReviewer", fields: [reviewed_by], references: [id], onDelete: SetNull)
+
+  @@index([target_entity_type, target_entity_id, status])
+  @@map("fraud_reports")
+}
+
+model FraudBlacklist {
+  id           BigInt    @id @default(autoincrement()) @map("BlacklistID")
+  entity_type  String    @map("EntityType") @db.VarChar(20)
+  entity_value String    @map("EntityValue") @db.VarChar(500)
+  reason       String    @map("Reason") @db.VarChar(500)
+  blocked_by   BigInt    @map("BlockedBy")
+  blocked_date DateTime  @default(now()) @map("BlockedDate")
+  expiry_date  DateTime? @map("ExpiryDate")
+  is_active    Boolean   @default(true) @map("IsActive")
+
+  blocker      AuthUser  @relation(fields: [blocked_by], references: [id])
+
+  @@unique([entity_type, entity_value])
+  @@index([is_active])
+  @@map("fraud_blacklist")
+}
+
+// =============================================================================
+// SCHEMA 21: [Anlyt] - Analytics
+// =============================================================================
+
+model AnlytDailySnapshot {
+  id                 BigInt   @id @default(autoincrement()) @map("DailySnapshotID")
+  snapshot_date      DateTime @unique @map("SnapshotDate") @db.Date
+  new_users          Int      @default(0) @map("NewUsers")
+  new_listings       Int      @default(0) @map("NewListings")
+  published_listings Int      @default(0) @map("PublishedListings")
+  total_views        Int      @default(0) @map("TotalViews")
+  total_inquiries    Int      @default(0) @map("TotalInquiries")
+  revenue            Decimal  @default(0.00) @map("Revenue") @db.Decimal(18, 2)
+  new_subscriptions  Int      @default(0) @map("NewSubscriptions")
+  active_boosts      Int      @default(0) @map("ActiveBoosts")
+  transactions_count Int      @default(0) @map("TransactionsCount")
+  top_category_id    Int?     @map("TopCategoryID")
+  top_city_id        Int?     @map("TopCityID")
+  calculated_date    DateTime @default(now()) @map("CalculatedDate")
+
+  @@map("anlyt_daily_snapshots")
+}
+
+model AnlytListingView {
+  id           BigInt      @id @default(autoincrement()) @map("ViewID")
+  listing_id   BigInt      @map("ListingID")
+  user_id      BigInt?     @map("UserID")
+  ip_address   String?     @map("IPAddress") @db.VarChar(45)
+  user_agent   String?     @map("UserAgent") @db.VarChar(500)
+  referrer_url String?     @map("ReferrerURL") @db.VarChar(2000)
+  viewed_date  DateTime    @default(now()) @map("ViewedDate")
+
+  listing      ListListing @relation(fields: [listing_id], references: [id], onDelete: Cascade)
+  user         AuthUser?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([listing_id, viewed_date])
+  @@index([viewed_date])
+  @@map("anlyt_listing_views")
+}
+
+model Hostel {
+  id                 BigInt     @id @default(autoincrement()) @map("HostelID")
+  property_id        BigInt     @unique @map("PropertyID")
+  name               String     @map("Name") @db.VarChar(200)
+  total_bed_spaces   Int        @map("TotalBedSpaces")
+  total_rooms        Int        @map("TotalRooms")
+  bathroom_count     Int        @map("BathroomCount")
+  attached_bathrooms Boolean    @default(false) @map("AttachedBathrooms")
+  gender_type        String     @default("UNISEX") @map("GenderType") @db.VarChar(50)
+
+  // Amenities
+  wifi_enabled    Boolean @default(false) @map("WifiEnabled")
+  wifi_speed      String? @map("WifiSpeed") @db.VarChar(100)
+  hot_water       Boolean @default(false) @map("HotWater")
+  water_filter    Boolean @default(false) @map("WaterFilter")
+  mess_food       Boolean @default(false) @map("MessFood")
+  laundry_enabled Boolean @default(false) @map("LaundryEnabled")
+  ac_available    Boolean @default(false) @map("AcAvailable")
+  water_source    String? @map("WaterSource") @db.VarChar(100)
+
+  // Vacancy
+  vacant_beds      Int      @default(0) @map("VacantBeds")
+  vacant_rooms     Int      @default(0) @map("VacantRooms")
+  vacant_sharings  String[] @map("VacantSharings")
+  allowed_sharings String[] @map("AllowedSharings")
+
+  created_at DateTime @default(now()) @map("CreatedDate")
+  updated_at DateTime @updatedAt @map("ModifiedDate")
+
+  property ListListing @relation(fields: [property_id], references: [id], onDelete: Cascade)
+  pricing  HostelPricing[]
+  admins   AuthUser[] @relation("HostelAdmin")
+
+  @@map("list_hostels")
+}
+
+model HostelPricing {
+  id         BigInt           @id @default(autoincrement()) @map("PricingID")
+  hostel_id  BigInt           @map("HostelID")
+  share_type String           @map("ShareType") @db.VarChar(50)
+  price      Int              @map("Price")
+  created_at DateTime         @default(now()) @map("CreatedDate")
+  updated_at DateTime         @updatedAt @map("ModifiedDate")
+
+  hostel Hostel @relation(fields: [hostel_id], references: [id], onDelete: Cascade)
+
+  @@unique([hostel_id, share_type])
+  @@map("list_hostel_pricing")
+}
+
+// =============================================================================
+// BACKWARD COMPATIBILITY MODELS (MAP TO NEW TABLE PREFIXES)
+// =============================================================================
+
+model Favorite {
+  id          BigInt      @id @default(autoincrement()) @map("WishlistID")
+  user_id     BigInt      @map("UserID")
+  property_id BigInt      @map("ListingID")
+  created_at  DateTime    @default(now()) @map("CreatedDate")
+
+  user        AuthUser    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  property    ListListing @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, property_id])
+  @@map("wish_wishlist")
+}
+
+model Message {
+  id              BigInt      @id @default(autoincrement()) @map("MessageID")
+  conversation_id BigInt      @map("ConversationID")
+  sender_user_id  BigInt      @map("SenderUserID")
+  content         String?     @map("MessageContent")
+  attachment_url  String?     @map("AttachmentURL") @db.VarChar(2000)
+  attachment_type String?     @map("AttachmentType") @db.VarChar(50)
+  sent_date       DateTime    @default(now()) @map("SentDate")
+  read_date       DateTime?   @map("ReadDate")
+  is_edited       Boolean     @default(false) @map("IsEdited")
+  is_deleted      Boolean     @default(false) @map("IsDeleted")
+
+  conversation    ChatConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender          AuthUser    @relation(fields: [sender_user_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id, sent_date])
+  @@map("chat_messages")
+}
+
+model Review {
+  id                   BigInt      @id @default(autoincrement()) @map("ReviewID")
+  reviewed_by_user_id  BigInt      @map("ReviewedByUserID")
+  reviewed_entity_type String      @map("ReviewedEntityType") @db.VarChar(20)
+  reviewed_entity_id   BigInt      @map("ReviewedEntityID")
+  listing_id           BigInt?     @map("ListingID")
+  rating               Int         @map("Rating") @db.SmallInt
+  comment              String?     @map("Comment") @db.VarChar(2000)
+  is_verified          Boolean     @default(false) @map("IsVerified")
+  is_active            Boolean     @default(true) @map("IsActive")
+  created_date         DateTime    @default(now()) @map("CreatedDate")
+  modified_date        DateTime?   @updatedAt @map("ModifiedDate")
+
+  reviewer             AuthUser    @relation(fields: [reviewed_by_user_id], references: [id], onDelete: Cascade)
+  listing              ListListing? @relation(fields: [listing_id], references: [id], onDelete: SetNull)
+
+  @@index([reviewed_entity_type, reviewed_entity_id])
+  @@map("review_reviews")
+}
+
+model Inquiry {
+  id           BigInt      @id @default(autoincrement()) @map("InquiryID")
+  user_id      BigInt      @map("UserID")
+  property_id  BigInt      @map("ListingID")
+  message      String      @map("Message")
+  status       String      @default("PENDING") @map("Status") @db.VarChar(20)
+  response     String?     @map("Response")
+  responded_by BigInt?     @map("RespondedBy")
+  responded_at DateTime?   @map("RespondedAt")
+  created_at   DateTime    @default(now()) @map("CreatedDate")
+  updated_at   DateTime    @updatedAt @map("ModifiedDate")
+
+  user         AuthUser    @relation("InquiryUser", fields: [user_id], references: [id], onDelete: Cascade)
+  responder    AuthUser?   @relation("InquiryResponder", fields: [responded_by], references: [id], onDelete: SetNull)
+  property     ListListing @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@index([property_id])
+  @@index([user_id])
+  @@index([status])
+  @@map("list_inquiries")
+}
+
+model Visit {
+  id           BigInt      @id @default(autoincrement()) @map("VisitID")
+  user_id      BigInt      @map("UserID")
+  property_id  BigInt      @map("ListingID")
+  scheduled_at DateTime    @map("ScheduledAt")
+  status       String      @default("REQUESTED") @map("Status") @db.VarChar(20)
+  notes        String?     @map("Notes")
+  owner_notes  String?     @map("OwnerNotes")
+  created_at   DateTime    @default(now()) @map("CreatedDate")
+  updated_at   DateTime    @updatedAt @map("ModifiedDate")
+
+  user         AuthUser    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  property     ListListing @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@map("list_visits")
+}
+
+model Notification {
+  id         BigInt   @id @default(autoincrement()) @map("NotificationID")
+  user_id    BigInt   @map("UserID")
+  type       String   @map("Type") @db.VarChar(50)
+  title      String   @map("Title") @db.VarChar(200)
+  message    String   @map("Message")
+  read       Boolean  @default(false) @map("Read")
+  created_at DateTime @default(now()) @map("CreatedDate")
+
+  user       AuthUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notify_notifications")
+}
+
+model SearchHistory {
+  id         BigInt   @id @default(autoincrement()) @map("SearchHistoryID")
+  user_id    BigInt   @map("UserID")
+  query      String   @map("Query") @db.VarChar(500)
+  created_at DateTime @default(now()) @map("CreatedDate")
+
+  user       AuthUser @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("wish_search_history")
+}
