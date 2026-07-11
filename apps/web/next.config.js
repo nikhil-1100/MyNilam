@@ -4,7 +4,6 @@ const nextConfig = {
     domains: ['localhost', 'your-storage-domain.com'],
   },
   transpilePackages: ['@repo/shared'],
-  outputFileTracing: false,
 }
 
 module.exports = nextConfig
