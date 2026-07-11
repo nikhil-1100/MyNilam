@@ -26,7 +26,24 @@ export const hostelRepository = {
   },
 
   async findByAdminUserId(userId: string) {
-    return null
+    const user = await db.authUser.findUnique({
+      where: { id: BigInt(userId) },
+      include: {
+        assigned_hostel: {
+          include: {
+            pricing: true,
+            property: {
+              include: {
+                media_assets: {
+                  take: 1
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    return user?.assigned_hostel || null
   },
 
   async upsert(propertyId: string, data: HostelConfigInput) {
