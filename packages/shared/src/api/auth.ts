@@ -61,7 +61,7 @@ class AuthApi {
     const authData: AuthResponse = {
       access: result.access_token,
       refresh: result.refresh_token,
-      user: result.user,
+      user: result.user ? { ...result.user, role: result.user.role?.toLowerCase() } : result.user,
     }
     
     if (typeof localStorage !== 'undefined') {
@@ -129,7 +129,8 @@ class AuthApi {
 
     // Real API call
     const response = await apiClient.get('/auth/me/')
-    return response.data.data
+    const user = response.data.data
+    return user ? { ...user, role: user.role?.toLowerCase() } : user
   }
 
   async updateProfile(data: Partial<User>): Promise<User> {
@@ -152,7 +153,8 @@ class AuthApi {
 
     // Real API call
     const response = await apiClient.patch('/auth/profile/', data)
-    return response.data.data
+    const user = response.data.data
+    return user ? { ...user, role: user.role?.toLowerCase() } : user
   }
 }
 

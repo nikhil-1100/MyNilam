@@ -23,7 +23,8 @@ export function useAuth() {
     onSuccess: (data) => {
       queryClient.setQueryData(['auth', 'user'], data.user)
       if (typeof window !== 'undefined') {
-        window.location.href = '/'
+        const target = data.user.role === 'hostel_admin' ? '/dashboard' : '/'
+        window.location.href = target
       }
     },
   })

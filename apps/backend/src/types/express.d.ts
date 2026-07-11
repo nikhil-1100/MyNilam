@@ -13,6 +13,8 @@ type RequestUser = Pick<
   | 'is_active'
   | 'is_deleted'
   | 'created_date'
+  | 'role'
+  | 'assigned_hostel_id'
 >
 
 declare global {

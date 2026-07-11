@@ -36,6 +36,8 @@ export async function requireAuth(
         is_active: true,
         is_deleted: true,
         created_date: true,
+        role: true,
+        assigned_hostel_id: true,
       },
     })
 
@@ -75,6 +77,8 @@ export async function optionalAuth(
         is_active: true,
         is_deleted: true,
         created_date: true,
+        role: true,
+        assigned_hostel_id: true,
       },
     })
 
