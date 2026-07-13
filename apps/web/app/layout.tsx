@@ -11,7 +11,7 @@ import { Footer } from '@/components/layout/Footer'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Rentel | Real Estate & Roommate Marketplace',
+  title: 'MyNilam | Real Estate & Roommate Marketplace',
   description: 'Find apartments, flats, villas, plots, or roommate matches with ease.',
 }
 

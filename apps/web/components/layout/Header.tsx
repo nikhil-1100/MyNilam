@@ -11,6 +11,20 @@ export const Header: React.FC = () => {
   const { user, logout } = useAuth()
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
+  const [logoIndex, setLogoIndex] = useState(0)
+  const [isFlipped, setIsFlipped] = useState(false)
+  const logoWords = ['Nilam', 'നിലം', 'ज़मीन', 'நிலം', 'أرض']
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIsFlipped(true)
+      setTimeout(() => {
+        setLogoIndex((prev) => (prev + 1) % logoWords.length)
+        setIsFlipped(false)
+      }, 300)
+    }, 10000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,8 +60,15 @@ export const Header: React.FC = () => {
           <div className="p-2.5 bg-slate-900 dark:bg-indigo-600 rounded-xl text-white shadow-md group-hover:scale-105 group-hover:rotate-1 transition-all duration-200">
             <Home className="h-5 w-5" />
           </div>
-          <span className="text-xl font-black bg-gradient-to-r from-slate-950 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent tracking-tight whitespace-nowrap py-1 inline-block">
-            Rentel
+          <span className="text-xl font-black tracking-tight whitespace-nowrap py-1 inline-block select-none">
+            <span className="bg-gradient-to-r from-slate-950 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">My</span>
+            <span 
+              className={`inline-block transition-all duration-300 transform ml-0.5 bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent ${
+                isFlipped ? 'opacity-0 scale-75 -translate-y-1' : 'opacity-100 scale-100 translate-y-0'
+              }`}
+            >
+              {logoWords[logoIndex]}
+            </span>
           </span>
         </Link>
 

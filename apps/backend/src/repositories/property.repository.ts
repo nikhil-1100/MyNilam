@@ -2,10 +2,14 @@ import { db } from '../config/database'
 import { Prisma } from '@prisma/client'
 import type { CreatePropertyInput, UpdatePropertyInput, PropertyFiltersInput } from '../validators/property.validator'
 
-// Include shape for full listing with relations
 export const propertyInclude = {
   user: { select: { id: true, email: true } },
   media_assets: { orderBy: { display_order: 'asc' as const } },
+  hostel: {
+    include: {
+      pricing: true,
+    },
+  },
 } satisfies Prisma.ListListingInclude
 
 export const propertyRepository = {
