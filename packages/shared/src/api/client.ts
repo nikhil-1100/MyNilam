@@ -39,6 +39,7 @@ export class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: apiBaseUrl,
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -58,8 +59,13 @@ export class ApiClient {
 
   private handleRequest(config: InternalAxiosRequestConfig) {
     const token = this.getToken()
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    if (token && config.headers) {
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`)
+      } else {
+        config.headers.Authorization = `Bearer ${token}`
+        config.headers['Authorization'] = `Bearer ${token}`
+      }
     }
     return config
   }
@@ -71,23 +77,31 @@ export class ApiClient {
   private async handleResponseError(error: any) {
     const originalRequest = error.config
 
+    if (originalRequest.url?.includes('/auth/refresh')) {
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
       try {
-        const refreshToken = this.getRefreshToken()
-        if (refreshToken) {
-          const response = await this.client.post('/auth/refresh/', {
-            refresh_token: refreshToken,
-          })
-          const result = response.data.data
-          this.setToken(result.access_token)
-          originalRequest.headers.Authorization = `Bearer ${result.access_token}`
-          return this.client(originalRequest)
+        const response = await this.client.post('/auth/refresh/')
+        const result = response.data.data
+        this.setToken(result.access_token)
+        
+        if (originalRequest.headers) {
+          if (typeof originalRequest.headers.set === 'function') {
+            originalRequest.headers.set('Authorization', `Bearer ${result.access_token}`)
+          } else {
+            originalRequest.headers.Authorization = `Bearer ${result.access_token}`
+            originalRequest.headers['Authorization'] = `Bearer ${result.access_token}`
+          }
         }
+        
+        return this.client(originalRequest)
       } catch (refreshError) {
         this.clearTokens()
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
           window.location.href = '/login'
         }
         return Promise.reject(refreshError)

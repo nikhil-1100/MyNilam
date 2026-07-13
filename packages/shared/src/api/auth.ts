@@ -60,13 +60,12 @@ class AuthApi {
     const result = response.data.data
     const authData: AuthResponse = {
       access: result.access_token,
-      refresh: result.refresh_token,
+      refresh: result.refresh_token || '',
       user: result.user ? { ...result.user, role: result.user.role?.toLowerCase() } : result.user,
     }
     
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('access_token', authData.access)
-      localStorage.setItem('refresh_token', authData.refresh)
       localStorage.setItem('currentUserEmail', authData.user.email)
     }
     
@@ -128,7 +127,7 @@ class AuthApi {
     }
 
     // Real API call
-    const response = await apiClient.get('/auth/me/')
+    const response = await apiClient.get('/auth/login/')
     const user = response.data.data
     return user ? { ...user, role: user.role?.toLowerCase() } : user
   }
