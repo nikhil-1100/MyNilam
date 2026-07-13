@@ -93,7 +93,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class CustomTokenRefreshView(APIView):
     permission_classes = []
-    authentication_classes = []
+    authentication_classes = [CustomJWTAuthentication]
 
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
@@ -237,7 +237,9 @@ class SignupUser(APIView):
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
+
     def patch(self, request, *args, **kwargs):
+        print('yes')
         user = request.user
         data = request.data
 

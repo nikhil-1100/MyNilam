@@ -200,7 +200,7 @@ class PropertiesApi {
             }
         })
 
-        const response = await apiClient.post('/properties/', formData, {
+        const response = await apiClient.post('/properties/post-ads/', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
