@@ -6,7 +6,7 @@ const nextConfig = {
   transpilePackages: ['@repo/shared'],
   experimental: {
     outputFileTracingExcludes: {
-      '*': [
+      '**/*': [
         '**/apps/backend/**',
         '**/apps/mobile/**',
       ]
